@@ -111,6 +111,41 @@ def delete_game(body: GameSearchSchema):
         return {"message": error_msg}, 404
 
 
+@app.put('/game', tags=[game_tag],
+         responses={"200": GameViewSchema, "404": ErrorSchema})
+def update_game(body: GameSchema):
+    """Updates a game in the database.
+    
+    Request body must be a JSON containing the game information with id.
+    """
+    game_id = body.id
+    logger.debug(f"Updating game #{game_id}")
+    
+    try:
+        session = Session()
+        game = session.query(Game).filter(Game.game_scheduling_id == game_id).first()
+        
+        if not game:
+            error_msg = "Game não encontrado na base :/"
+            logger.warning(f"Error updating game #{game_id}, {error_msg}")
+            return {"message": error_msg}, 404
+            
+        game.label = body.label
+        game.cost = body.cost
+        game.location = body.location
+        game.game_date = body.game_date
+        game.duration_minutes = body.duration_minutes
+        
+        session.commit()
+        logger.debug(f"Updated game #{game_id}")
+        return detail_game(game), 200
+        
+    except Exception as e:
+        error_msg = "Não foi possível atualizar o game :/"
+        logger.warning(f"Error updating game #{game_id}, {error_msg}")
+        return {"message": error_msg}, 400
+
+
 # @app.post('/player', tags=[player_tag],
 #           responses={"200": PlayerViewSchema, "404": ErrorSchema})
 # def add_player(form: PlayerSchema):
